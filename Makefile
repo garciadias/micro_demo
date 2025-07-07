@@ -16,28 +16,28 @@ help:
 
 # Build the images
 build:
-	docker-compose build
+	docker compose build
 
 # Start the services
 up:
-	docker-compose up -d
+	docker compose up -d
 
 # Stop the services
 down:
-	docker-compose down
+	docker compose down
 
 # Restart the services
 restart: down up
 
 # Show logs
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs1:
-	docker-compose logs -f service1
+	docker compose logs -f service1
 
 logs2:
-	docker-compose logs -f service2
+	docker compose logs -f service2
 
 # Run tests
 test:
@@ -47,7 +47,7 @@ test:
 
 # Clean up everything
 clean:
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 	docker system prune -f
 
 # Rebuild everything
@@ -59,3 +59,8 @@ start: build up
 	@echo "Service 1: http://localhost:8001"
 	@echo "Service 2: http://localhost:8002"
 	@echo "Run 'make test' to test the services"
+
+debug:
+	@echo "Debugging mode will create both services but will not start the fastapi service."
+	docker compose -f docker compose.debug.yml build
+	docker compose -f docker compose.debug.yml up -d

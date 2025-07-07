@@ -30,7 +30,6 @@ ENV/
 .docker/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

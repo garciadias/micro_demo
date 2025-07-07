@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -21,6 +22,7 @@ SHARED_DATA_PATH = Path("/app/shared_data")
 # Ensure shared data directory exists
 SHARED_DATA_PATH.mkdir(exist_ok=True)
 
+
 class ServiceSettings(BaseModel):
     service_name: str
     service_version: str
@@ -29,9 +31,11 @@ class ServiceSettings(BaseModel):
     timestamp: str
     message: str
 
+
 class AddSettingsRequest(BaseModel):
     filename: str
     message: str
+
 
 def get_service_settings(message: str = "") -> Dict[str, Any]:
     """Get current service settings"""
@@ -44,10 +48,11 @@ def get_service_settings(message: str = "") -> Dict[str, Any]:
         "message": message
     }
 
+
 async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
     """Save data to a JSON file in the shared directory"""
     file_path = SHARED_DATA_PATH / filename
-    
+
     # Load existing data if file exists
     existing_data = []
     if file_path.exists():
@@ -56,13 +61,14 @@ async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
                 existing_data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             existing_data = []
-    
+
     # Append new data
     existing_data.append(data)
-    
+
     # Save back to file
     with open(file_path, 'w') as f:
         json.dump(existing_data, f, indent=2)
+
 
 @app.get("/")
 async def root():
@@ -75,15 +81,18 @@ async def root():
         "fastapi_version": "0.68.0"
     }
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": SERVICE_NAME}
 
+
 @app.get("/settings")
 async def get_settings():
     """Get service settings"""
     return get_service_settings()
+
 
 @app.post("/add-settings")
 async def add_settings(request: AddSettingsRequest):
@@ -93,19 +102,20 @@ async def add_settings(request: AddSettingsRequest):
     try:
         # Create settings for this service
         service2_settings = get_service_settings(request.message)
-        
+
         # Save service2 settings to the same JSON file
         await save_to_json_file(request.filename, service2_settings)
-        
+
         return {
             "success": True,
             "message": f"Settings added successfully by {SERVICE_NAME}",
             "filename": request.filename,
             "settings": service2_settings
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 @app.get("/files")
 async def list_files():
@@ -116,6 +126,7 @@ async def list_files():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
 
+
 @app.get("/files/{filename}")
 async def get_file_content(filename: str):
     """Get content of a specific JSON file"""
@@ -123,15 +134,16 @@ async def get_file_content(filename: str):
         file_path = SHARED_DATA_PATH / filename
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
-        
+
         with open(file_path, 'r') as f:
             content = json.load(f)
-        
+
         return {"filename": filename, "content": content}
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON file")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
 
 @app.post("/create-standalone")
 async def create_standalone(request: AddSettingsRequest):
@@ -141,19 +153,49 @@ async def create_standalone(request: AddSettingsRequest):
     try:
         # Create settings for this service
         service2_settings = get_service_settings(request.message)
-        
+
         # Save service2 settings to JSON file
         await save_to_json_file(request.filename, service2_settings)
-        
+
         return {
             "success": True,
             "message": f"Standalone data created by {SERVICE_NAME}",
             "filename": request.filename,
             "settings": service2_settings
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/create-data-from-service1")
+def create_data_from_service1(request: AddSettingsRequest):
+    """
+    Use a post request to service1 to create data
+    """
+    try:
+        result = requests.post(f"http://service1:8001/create-data",
+            json={
+                "filename": request.filename,
+                "message": request.message
+            },
+            timeout=30.0
+        )
+        result.raise_for_status()
+        service1_response = result.json()
+        return {
+            "success": True,
+            "message": f"Data created successfully by {SERVICE_NAME}",
+            "filename": request.filename,
+            "service1_response": service1_response
+        }
+
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Failed to communicate with service1: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     import uvicorn

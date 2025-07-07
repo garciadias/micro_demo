@@ -23,6 +23,8 @@ SHARED_DATA_PATH = Path("/app/shared_data")
 # Ensure shared data directory exists
 SHARED_DATA_PATH.mkdir(exist_ok=True)
 
+
+# Define Pydantic models for data interfaces
 class ServiceSettings(BaseModel):
     service_name: str
     service_version: str
@@ -31,9 +33,11 @@ class ServiceSettings(BaseModel):
     timestamp: str
     message: str
 
+
 class CreateDataRequest(BaseModel):
     filename: str
     message: str
+
 
 def get_service_settings(message: str = "") -> Dict[str, Any]:
     """Get current service settings"""
@@ -46,10 +50,11 @@ def get_service_settings(message: str = "") -> Dict[str, Any]:
         "message": message
     }
 
+
 async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
     """Save data to a JSON file in the shared directory"""
     file_path = SHARED_DATA_PATH / filename
-    
+
     # Load existing data if file exists
     existing_data = []
     if file_path.exists():
@@ -58,13 +63,14 @@ async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
                 existing_data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             existing_data = []
-    
+
     # Append new data
     existing_data.append(data)
-    
+
     # Save back to file
     with open(file_path, 'w') as f:
         json.dump(existing_data, f, indent=2)
+
 
 @app.get("/")
 async def root():
@@ -77,15 +83,18 @@ async def root():
         "fastapi_version": "0.104.1"
     }
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": SERVICE_NAME}
 
+
 @app.get("/settings")
 async def get_settings():
     """Get service settings"""
     return get_service_settings()
+
 
 @app.post("/create-data")
 async def create_data(request: CreateDataRequest):
@@ -95,10 +104,10 @@ async def create_data(request: CreateDataRequest):
     try:
         # Create settings for this service
         service1_settings = get_service_settings(request.message)
-        
+
         # Save service1 settings to JSON file
         await save_to_json_file(request.filename, service1_settings)
-        
+
         # Call service2 to add its settings to the same file
         async with httpx.AsyncClient() as client:
             try:
@@ -122,12 +131,12 @@ async def create_data(request: CreateDataRequest):
                     status_code=e.response.status_code,
                     detail=f"Service2 returned error: {e.response.text}"
                 )
-        
+
         # Read the final file content
         file_path = SHARED_DATA_PATH / request.filename
         with open(file_path, 'r') as f:
             final_content = json.load(f)
-        
+
         return {
             "success": True,
             "message": f"Data created successfully by {SERVICE_NAME}",
@@ -136,9 +145,10 @@ async def create_data(request: CreateDataRequest):
             "service2_response": service2_response,
             "final_file_content": final_content
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 @app.get("/files")
 async def list_files():
@@ -149,6 +159,7 @@ async def list_files():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
 
+
 @app.get("/files/{filename}")
 async def get_file_content(filename: str):
     """Get content of a specific JSON file"""
@@ -156,15 +167,16 @@ async def get_file_content(filename: str):
         file_path = SHARED_DATA_PATH / filename
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
-        
+
         with open(file_path, 'r') as f:
             content = json.load(f)
-        
+
         return {"filename": filename, "content": content}
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON file")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
