@@ -174,7 +174,7 @@ def create_data_from_service1(request: AddSettingsRequest):
     Use a post request to service1 to create data
     """
     try:
-        result = requests.post(f"http://service1:8001/create-data",
+        result = requests.post("http://service1:8001/create-data",
             json={
                 "filename": request.filename,
                 "message": request.message
