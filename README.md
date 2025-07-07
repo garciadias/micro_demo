@@ -1,5 +1,11 @@
 # Microservices Demo
 
+For a more detailed introduction to microservices, check out:
+
+- This seminal article: [Microservices](https://martinfowler.com/articles/microservices.html).
+- This microsoft guide: [Microservices Architecture](https://docs.microsoft.com/en-us/azure/architecture/microservices/).
+- This comprehensive book: [Microservice APIs : Using Python, Flask, FastAPI, OpenAPI and More](https://books.google.co.uk/books/about/Microservice_APIs.html?id=5s-azgEACAAJ&redir_esc=y).
+
 This project demonstrates two FastAPI services that communicate with each other and share data through a common mounted folder.
 
 ## Architecture
