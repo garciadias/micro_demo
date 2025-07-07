@@ -1,9 +1,0 @@
-{
-    "python.defaultInterpreterPath": "/usr/local/bin/python",
-    "python.terminal.activateEnvironment": false,
-    "files.watcherExclude": {
-        "**/node_modules/**": true,
-        "**/.git/**": true,
-        "**/shared_data/**": true
-    }
-}
