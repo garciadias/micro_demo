@@ -43,26 +43,34 @@ curl -X POST "http://localhost:8001/create-data" \
   }'
 ```
 
+3. Check the shared JSON file:
+
+```bash
+cat shared_data/test_communication.json
+```
+
+4. Add settings from Service 2:
+
+```bash
+curl -X POST "http://localhost:8002/add-settings" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "test_communication.json",
+    "message": "Hello from Service 2!"
+  }'
+```
+
 ## API Endpoints
 
 ### Service 1 (Port 8001)
 
 - `GET /` - Service information
-- `GET /health` - Health check
-- `GET /settings` - Get service settings
 - `POST /create-data` - **Main endpoint**: Creates JSON data and calls Service 2
-- `GET /files` - List all JSON files
-- `GET /files/{filename}` - Get specific file content
 
 ### Service 2 (Port 8002)
 
 - `GET /` - Service information
-- `GET /health` - Health check
-- `GET /settings` - Get service settings
 - `POST /add-settings` - Called by Service 1 to add settings
-- `POST /create-standalone` - Create data independently
-- `GET /files` - List all JSON files
-- `GET /files/{filename}` - Get specific file content
 
 ## Workflow
 
@@ -121,54 +129,12 @@ curl -X POST "http://localhost:8001/create-data" \
 }
 ```
 
-## Testing Individual Services
-
-### Service 1 Only
-
-```bash
-curl http://localhost:8001/
-curl http://localhost:8001/health
-curl http://localhost:8001/settings
-```
-
-### Service 2 Only
-
-```bash
-curl http://localhost:8002/
-curl http://localhost:8002/health
-curl http://localhost:8002/settings
-
-# Create standalone data
-curl -X POST "http://localhost:8002/create-standalone" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filename": "service2_only.json",
-    "message": "Service 2 standalone test"
-  }'
-```
-
-### View Files
-
-```bash
-curl http://localhost:8001/files
-curl http://localhost:8001/files/test_communication.json
-```
-
 ## Docker Compose Configuration
 
 - Both services share the `./shared_data` folder
 - Services communicate through the `microservices-network`
 - Service 1 depends on Service 2 to ensure proper startup order
 - Environment variables configure service behavior
-
-## Development
-
-To run locally without Docker:
-
-1. Set up virtual environments for each service
-2. Install requirements: `pip install -r requirements.txt`
-3. Run services: `uvicorn main:app --port 8001` and `uvicorn main:app --port 8002`
-4. Update `OTHER_SERVICE_URL` environment variable for local development
 
 ## Debug Setup Instructions
 
