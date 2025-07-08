@@ -1,17 +1,17 @@
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+import fastapi
 import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(
-    title="Microservice 2",
-    description="Second FastAPI service using Python 3.9 and FastAPI 0.68.0",
-    version="2.0.0"
+    title="Microservice 2", description="Second FastAPI service using Python 3.9 and FastAPI 0.68.0", version="2.0.0"
 )
 
 # Configuration
@@ -42,10 +42,10 @@ def get_service_settings(message: str = "") -> Dict[str, Any]:
     return {
         "service_name": SERVICE_NAME,
         "service_version": SERVICE_VERSION,
-        "python_version": "3.9",
-        "fastapi_version": "0.68.0",
+        "python_version": sys.version.split(" ")[0],
+        "fastapi_version": fastapi.__version__,
         "timestamp": datetime.now().isoformat(),
-        "message": message
+        "message": message,
     }
 
 
@@ -57,7 +57,7 @@ async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
     existing_data = []
     if file_path.exists():
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 existing_data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             existing_data = []
@@ -66,32 +66,14 @@ async def save_to_json_file(filename: str, data: Dict[str, Any]) -> None:
     existing_data.append(data)
 
     # Save back to file
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         json.dump(existing_data, f, indent=2)
 
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "service": SERVICE_NAME,
-        "version": SERVICE_VERSION,
-        "status": "running",
-        "python_version": "3.9",
-        "fastapi_version": "0.68.0"
-    }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": SERVICE_NAME}
-
-
-@app.get("/settings")
-async def get_settings():
-    """Get service settings"""
-    return get_service_settings()
+    return get_service_settings("Welcome to Service 2!")
 
 
 @app.post("/add-settings")
@@ -110,58 +92,7 @@ async def add_settings(request: AddSettingsRequest):
             "success": True,
             "message": f"Settings added successfully by {SERVICE_NAME}",
             "filename": request.filename,
-            "settings": service2_settings
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-
-@app.get("/files")
-async def list_files():
-    """List all JSON files in the shared directory"""
-    try:
-        json_files = [f.name for f in SHARED_DATA_PATH.glob("*.json")]
-        return {"files": json_files}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
-
-
-@app.get("/files/{filename}")
-async def get_file_content(filename: str):
-    """Get content of a specific JSON file"""
-    try:
-        file_path = SHARED_DATA_PATH / filename
-        if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found")
-
-        with open(file_path, 'r') as f:
-            content = json.load(f)
-
-        return {"filename": filename, "content": content}
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON file")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
-
-
-@app.post("/create-standalone")
-async def create_standalone(request: AddSettingsRequest):
-    """
-    Alternative endpoint to create data independently
-    """
-    try:
-        # Create settings for this service
-        service2_settings = get_service_settings(request.message)
-
-        # Save service2 settings to JSON file
-        await save_to_json_file(request.filename, service2_settings)
-
-        return {
-            "success": True,
-            "message": f"Standalone data created by {SERVICE_NAME}",
-            "filename": request.filename,
-            "settings": service2_settings
+            "settings": service2_settings,
         }
 
     except Exception as e:
@@ -174,12 +105,10 @@ def create_data_from_service1(request: AddSettingsRequest):
     Use a post request to service1 to create data
     """
     try:
-        result = requests.post("http://service1:8001/create-data",
-            json={
-                "filename": request.filename,
-                "message": request.message
-            },
-            timeout=30.0
+        result = requests.post(
+            "http://service1:8001/create-data",
+            json={"filename": request.filename, "message": request.message},
+            timeout=30.0,
         )
         result.raise_for_status()
         service1_response = result.json()
@@ -187,16 +116,14 @@ def create_data_from_service1(request: AddSettingsRequest):
             "success": True,
             "message": f"Data created successfully by {SERVICE_NAME}",
             "filename": request.filename,
-            "service1_response": service1_response
+            "service1_response": service1_response,
         }
 
     except requests.RequestException as e:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Failed to communicate with service1: {str(e)}"
-        )
+        raise HTTPException(status_code=503, detail=f"Failed to communicate with service1: {str(e)}")
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8002)

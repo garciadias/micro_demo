@@ -6,6 +6,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
+      - ./service1/main.py:/app/main.py
       - ./shared_data:/app/shared_data
     environment:
       - SERVICE_NAME=service1
@@ -23,6 +24,7 @@ services:
     ports:
       - "8002:8002"
     volumes:
+      - ./service2/main.py:/app/main.py
       - ./shared_data:/app/shared_data
     environment:
       - SERVICE_NAME=service2
