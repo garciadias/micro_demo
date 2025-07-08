@@ -20,24 +20,24 @@ build:
 
 # Start the services
 up:
-	docker compose up -d
+	docker compose -f docker-compose.yml up
 
 # Stop the services
 down:
-	docker compose down
+	docker compose -f docker-compose.yml down
 
 # Restart the services
 restart: down up
 
 # Show logs
 logs:
-	docker compose logs -f
+	docker compose -f docker-compose.yml logs -f
 
 logs1:
-	docker compose logs -f service1
+	docker compose -f docker-compose.yml logs -f service1
 
 logs2:
-	docker compose logs -f service2
+	docker compose -f docker-compose.yml logs -f service2
 
 # Run tests
 test:
@@ -62,5 +62,5 @@ start: build up
 
 debug:
 	@echo "Debugging mode will create both services but will not start the fastapi service."
-	docker compose -f docker compose.debug.yml build
-	docker compose -f docker compose.debug.yml up -d
+	docker compose -f docker-compose.debug.yml build
+	docker compose -f docker-compose.debug.yml up

@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+import fastapi
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ app = FastAPI(
 )
 
 # Configuration
-SERVICE_NAME = os.getenv("SERVICE_NAME", "service1")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "Service 1")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
 OTHER_SERVICE_URL = os.getenv("OTHER_SERVICE_URL", "http://service2:8002")
 SHARED_DATA_PATH = Path("/app/shared_data")
@@ -94,7 +95,7 @@ async def create_data(request: CreateDataRequest):
             try:
                 response = await client.post(
                     f"{OTHER_SERVICE_URL}/add-settings",
-                    json={"filename": request.filename, "message": f"Called from {SERVICE_NAME}"},
+                    json={"filename": request.filename, "message": "Added by Service 2, Called from Service 1"},
                     timeout=30.0,
                 )
                 response.raise_for_status()

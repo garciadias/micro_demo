@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 import fastapi
-import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -97,30 +96,6 @@ async def add_settings(request: AddSettingsRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-
-@app.post("/create-data-from-service1")
-def create_data_from_service1(request: AddSettingsRequest):
-    """
-    Use a post request to service1 to create data
-    """
-    try:
-        result = requests.post(
-            "http://service1:8001/create-data",
-            json={"filename": request.filename, "message": request.message},
-            timeout=30.0,
-        )
-        result.raise_for_status()
-        service1_response = result.json()
-        return {
-            "success": True,
-            "message": f"Data created successfully by {SERVICE_NAME}",
-            "filename": request.filename,
-            "service1_response": service1_response,
-        }
-
-    except requests.RequestException as e:
-        raise HTTPException(status_code=503, detail=f"Failed to communicate with service1: {str(e)}")
 
 
 if __name__ == "__main__":
